@@ -1,6 +1,9 @@
 mod random;
 
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    fmt::{Display, Write},
+};
 
 use random::random_range;
 
@@ -18,6 +21,28 @@ pub struct Minesweeper {
     open_fields: HashSet<Position>,
     mines: HashSet<Position>,
     flagged_fields: HashSet<Position>,
+}
+
+impl Display for Minesweeper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let pos = (x, y);
+
+                if !self.open_fields.contains(&pos) {
+                    f.write_str("🟪")?;
+                } else if self.mines.contains(&pos) {
+                    f.write_str("💣")?;
+                } else {
+                    write!(f, "{}", self.neighboring_mines(pos))?;
+                }
+            }
+
+            f.write_char('\n')?;
+        }
+
+        Ok(())
+    }
 }
 
 impl Minesweeper {
@@ -38,10 +63,18 @@ impl Minesweeper {
         }
     }
 
-    pub fn neighbors(&self, (x, y): Position) -> Vec<Position> {
-        (x - 1..=x + 1)
-            .flat_map(|i| (y - 1..=y + 1).map(move |j| (i, j)))
-            .collect()
+    pub fn iter_neighbors(&self, (x, y): Position) -> impl Iterator<Item = Position> {
+        let width = self.width;
+        let height = self.height;
+        (x.min(1) - 1..=(x + 1).min(width - 1))
+            .flat_map(move |i| (y.min(1) - 1..=(y + 1).min(height - 1)).map(move |j| (i, j)))
+            .filter(move |&pos| pos != (x, y))
+    }
+
+    pub fn neighboring_mines(&self, pos: Position) -> u8 {
+        self.iter_neighbors(pos)
+            .filter(|pos| self.mines.contains(pos))
+            .count() as u8
     }
 
     pub fn open(&mut self, position: Position) -> OpenResult {
@@ -63,8 +96,11 @@ mod tests {
 
     #[test]
     fn test() {
-        let ms = Minesweeper::new(10, 10, 5);
+        let mut ms = Minesweeper::new(10, 10, 5);
 
-        println!("{:?}", ms);
+        ms.open((5, 5));
+
+        // println!("{:?}", ms);
+        println!("{}", ms);
     }
 }
