@@ -1,106 +1,22 @@
+mod minesweeper;
 mod random;
 
-use std::{
-    collections::HashSet,
-    fmt::{Display, Write},
-};
+use minesweeper::*;
+use wasm_bindgen::prelude::*;
 
-use random::random_range;
-
-pub type Position = (usize, usize);
-
-pub enum OpenResult {
-    Mine,
-    NoMine(u8),
+#[wasm_bindgen]
+extern "C" {
+    fn alert(s: &str);
 }
 
-#[derive(Debug)]
-pub struct Minesweeper {
-    width: usize,
-    height: usize,
-    open_fields: HashSet<Position>,
-    mines: HashSet<Position>,
-    flagged_fields: HashSet<Position>,
+#[wasm_bindgen]
+pub fn greet(name: &str) {
+    alert(&format!("Hello, {}!", name));
 }
 
-impl Display for Minesweeper {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let pos = (x, y);
+#[wasm_bindgen(js_name = getState)]
+pub fn get_state() -> String {
+    let ms = Minesweeper::new(10, 10, 5);
 
-                if !self.open_fields.contains(&pos) {
-                    f.write_str("🟪")?;
-                } else if self.mines.contains(&pos) {
-                    f.write_str("💣")?;
-                } else {
-                    write!(f, "{}", self.neighboring_mines(pos))?;
-                }
-            }
-
-            f.write_char('\n')?;
-        }
-
-        Ok(())
-    }
-}
-
-impl Minesweeper {
-    pub fn new(width: usize, height: usize, mine_count: usize) -> Minesweeper {
-        Minesweeper {
-            width,
-            height,
-            open_fields: HashSet::new(),
-            mines: {
-                let mut mines = HashSet::new();
-
-                while mines.len() < mine_count {
-                    mines.insert((random_range(0, width), random_range(0, height)));
-                }
-                mines
-            },
-            flagged_fields: HashSet::new(),
-        }
-    }
-
-    pub fn iter_neighbors(&self, (x, y): Position) -> impl Iterator<Item = Position> {
-        let width = self.width;
-        let height = self.height;
-        (x.min(1) - 1..=(x + 1).min(width - 1))
-            .flat_map(move |i| (y.min(1) - 1..=(y + 1).min(height - 1)).map(move |j| (i, j)))
-            .filter(move |&pos| pos != (x, y))
-    }
-
-    pub fn neighboring_mines(&self, pos: Position) -> u8 {
-        self.iter_neighbors(pos)
-            .filter(|pos| self.mines.contains(pos))
-            .count() as u8
-    }
-
-    pub fn open(&mut self, position: Position) -> OpenResult {
-        self.open_fields.insert(position);
-
-        let is_mine = self.mines.contains(&position);
-
-        if is_mine {
-            OpenResult::Mine
-        } else {
-            OpenResult::NoMine(0)
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::Minesweeper;
-
-    #[test]
-    fn test() {
-        let mut ms = Minesweeper::new(10, 10, 5);
-
-        ms.open((5, 5));
-
-        // println!("{:?}", ms);
-        println!("{}", ms);
-    }
+    ms.to_string()
 }
