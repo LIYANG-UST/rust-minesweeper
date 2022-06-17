@@ -29,14 +29,14 @@ impl Display for Minesweeper {
 
                 if !self.open_fields.contains(&pos) {
                     if self.flagged_fields.contains(&pos) {
-                        f.write_str("🚩")?;
+                        f.write_str("🚩 ")?;
                     } else {
-                        f.write_str("🟪")?;
+                        f.write_str("🟪 ")?;
                     }
                 } else if self.mines.contains(&pos) {
-                    f.write_str("💣")?;
+                    f.write_str("💣 ")?;
                 } else {
-                    write!(f, "{}", self.neighboring_mines(pos))?;
+                    write!(f, " {} ", self.neighboring_mines(pos))?;
                 }
             }
 
